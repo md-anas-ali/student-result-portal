@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">📚 Admin Dashboard</div>
+    <nav><a href="#" onclick="logout()">Logout</a></nav>
+</header>
+
+<div class="container">
+    <div id="errorMsg" class="error-msg"></div>
+
+    <div class="dash-nav">
+        <button data-panel="students" class="active">Students</button>
+        <button data-panel="teachers">Teachers</button>
+        <button data-panel="classes">Classes/Subjects</button>
+        <button data-panel="exams">Exams</button>
+        <button data-panel="results">Results</button>
+        <button data-panel="users">Users</button>
+        <button data-panel="sync">Google Sheets Sync</button>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="panel active" id="panel-students">
+        <h3 class="section-title">Add Student</h3>
+        <div class="form-row">
+            <input id="s_studentId" placeholder="Student ID (e.g. STU-000123)">
+            <input id="s_name" placeholder="Name">
+        </div>
+        <div class="form-row">
+            <input id="s_roll" placeholder="Roll">
+            <input id="s_registration" placeholder="Registration">
+        </div>
+        <div class="form-row">
+            <input id="s_classId" placeholder="Class ID (see Classes tab)">
+            <input id="s_sectionId" placeholder="Section ID (optional)">
+        </div>
+        <input id="s_group" placeholder="Group (optional, e.g. Science)">
+        <div class="form-row">
+            <input id="s_loginUser" placeholder="Login username (optional)">
+            <input id="s_loginPass" placeholder="Login password (optional)" type="password">
+        </div>
+        <button class="primary" onclick="createStudent()">Create Student</button>
+
+        <h3 class="section-title">All Students</h3>
+        <table class="data-table" id="studentsTable">
+            <thead><tr><th>ID</th><th>Student ID</th><th>Name</th><th>Roll</th><th>Registration</th><th>Class</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- TEACHERS -->
+    <div class="panel" id="panel-teachers">
+        <h3 class="section-title">Add Teacher</h3>
+        <div class="form-row">
+            <input id="t_teacherId" placeholder="Teacher ID (e.g. TCH-001)">
+            <input id="t_name" placeholder="Name">
+        </div>
+        <div class="form-row">
+            <input id="t_loginUser" placeholder="Login username (optional)">
+            <input id="t_loginPass" placeholder="Login password (optional)" type="password">
+        </div>
+        <button class="primary" onclick="createTeacher()">Create Teacher</button>
+
+        <h3 class="section-title">All Teachers</h3>
+        <table class="data-table" id="teachersTable">
+            <thead><tr><th>ID</th><th>Teacher ID</th><th>Name</th></tr></thead>
+            <tbody></tbody>
+        </table>
+
+        <h3 class="section-title">Assign Teacher to Class/Subject</h3>
+        <div class="form-row">
+            <input id="ta_teacherId" placeholder="Teacher ID (internal, from table above)">
+            <input id="ta_classId" placeholder="Class ID">
+        </div>
+        <div class="form-row">
+            <input id="ta_sectionId" placeholder="Section ID (optional)">
+            <input id="ta_subjectId" placeholder="Subject ID">
+        </div>
+        <button class="primary" onclick="createAssignment()">Assign</button>
+    </div>
+
+    <!-- CLASSES/SUBJECTS -->
+    <div class="panel" id="panel-classes">
+        <h3 class="section-title">Classes</h3>
+        <div class="form-row"><input id="c_name" placeholder="Class name (e.g. HSC)"><button class="primary" onclick="createClass()">Add Class</button></div>
+        <table class="data-table" id="classesTable"><thead><tr><th>ID</th><th>Name</th></tr></thead><tbody></tbody></table>
+
+        <h3 class="section-title">Sections</h3>
+        <div class="form-row">
+            <input id="sec_classId" placeholder="Class ID">
+            <input id="sec_name" placeholder="Section name (e.g. A)">
+        </div>
+        <button class="primary" onclick="createSection()">Add Section</button>
+        <table class="data-table" id="sectionsTable"><thead><tr><th>ID</th><th>Class ID</th><th>Name</th></tr></thead><tbody></tbody></table>
+
+        <h3 class="section-title">Subjects</h3>
+        <div class="form-row">
+            <input id="sub_code" placeholder="Subject code (e.g. ENG101)">
+            <input id="sub_name" placeholder="Subject name">
+        </div>
+        <button class="primary" onclick="createSubject()">Add Subject</button>
+        <table class="data-table" id="subjectsTable"><thead><tr><th>ID</th><th>Code</th><th>Name</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <!-- EXAMS -->
+    <div class="panel" id="panel-exams">
+        <h3 class="section-title">Exams</h3>
+        <div class="form-row">
+            <input id="e_name" placeholder="Exam name (e.g. HSC)">
+            <input id="e_year" placeholder="Year (e.g. 2026)">
+        </div>
+        <button class="primary" onclick="createExam()">Add Exam</button>
+        <table class="data-table" id="examsTable"><thead><tr><th>ID</th><th>Name</th><th>Year</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="panel" id="panel-results">
+        <h3 class="section-title">Enter Subject Result</h3>
+        <div class="form-row">
+            <input id="r_studentId" placeholder="Student internal ID">
+            <input id="r_examId" placeholder="Exam ID">
+        </div>
+        <div class="form-row">
+            <input id="r_subjectId" placeholder="Subject ID">
+            <input id="r_full" placeholder="Full marks" value="100">
+        </div>
+        <div class="form-row">
+            <input id="r_marks" placeholder="Marks obtained">
+            <input id="r_grade" placeholder="Grade">
+        </div>
+        <div class="form-row">
+            <input id="r_gpa" placeholder="GPA">
+            <select id="r_status"><option value="PASS">PASS</option><option value="FAIL">FAIL</option></select>
+        </div>
+        <button class="primary" onclick="saveResult()">Save Subject Result</button>
+
+        <h3 class="section-title">Set Overall Summary</h3>
+        <div class="form-row">
+            <input id="rs_studentId" placeholder="Student internal ID">
+            <input id="rs_examId" placeholder="Exam ID">
+        </div>
+        <div class="form-row">
+            <input id="rs_total" placeholder="Total marks">
+            <input id="rs_totalFull" placeholder="Total full marks">
+        </div>
+        <div class="form-row">
+            <input id="rs_gpa" placeholder="GPA">
+            <select id="rs_status"><option value="PASS">PASS</option><option value="FAIL">FAIL</option></select>
+        </div>
+        <button class="primary" onclick="saveSummary()">Save Summary</button>
+    </div>
+
+    <!-- USERS -->
+    <div class="panel" id="panel-users">
+        <h3 class="section-title">Create User Account</h3>
+        <div class="form-row">
+            <input id="u_username" placeholder="Username">
+            <input id="u_password" placeholder="Password" type="password">
+        </div>
+        <select id="u_role"><option value="admin">admin</option><option value="teacher">teacher</option><option value="student">student</option></select>
+        <button class="primary" onclick="createUser()">Create User</button>
+
+        <h3 class="section-title">All Users</h3>
+        <table class="data-table" id="usersTable">
+            <thead><tr><th>ID</th><th>Username</th><th>Role</th><th>Active</th><th></th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- SYNC -->
+    <div class="panel" id="panel-sync">
+        <h3 class="section-title">Google Sheets Sync</h3>
+        <p style="margin-bottom:10px;color:#555;">Runs a validated import from the configured Google Sheet into PostgreSQL. Invalid rows are skipped and reported — nothing is overwritten blindly.</p>
+        <div class="form-row">
+            <button class="primary" onclick="runSync('students')">Sync Students</button>
+            <button class="primary" onclick="runSync('teachers')">Sync Teachers</button>
+        </div>
+        <button class="primary" style="margin-top:10px" onclick="runSync('marks')">Sync Marks</button>
+        <pre id="syncResult" style="background:white;padding:15px;border-radius:8px;margin-top:15px;white-space:pre-wrap;"></pre>
+    </div>
+</div>
+
+<script src="/js/admin.js"></script>
+</body>
+</html>
