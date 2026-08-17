@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ফলাফল অনুসন্ধান</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">📚 Student Result</div>
+    <nav>
+        <a href="/index.html">Home</a>
+        <a href="/search.html">Result</a>
+        <a href="/login.html">Login</a>
+    </nav>
+</header>
+
+<div class="container">
+    <div class="card-box">
+        <h2>🔎 ফলাফল অনুসন্ধান</h2>
+        <div id="errorMsg" class="error-msg"></div>
+
+        <select id="examName">
+            <option value="">পরীক্ষা নির্বাচন করুন</option>
+            <option value="SSC">SSC</option>
+            <option value="HSC">HSC</option>
+        </select>
+
+        <select id="examYear">
+            <option value="">সাল নির্বাচন করুন</option>
+            <option value="2026">2026</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+        </select>
+
+        <input id="roll" type="text" placeholder="রোল নম্বর লিখুন">
+        <input id="registration" type="text" placeholder="রেজিস্ট্রেশন নম্বর লিখুন">
+
+        <button class="primary" onclick="searchResult()">ফলাফল দেখুন</button>
+    </div>
+
+    <div id="resultArea"></div>
+</div>
+
+<footer><p>&copy; 2026 Student Result Portal</p></footer>
+
+<script>
+async function searchResult() {
+    const exam = document.getElementById('examName').value;
+    const year = document.getElementById('examYear').value;
+    const roll = document.getElementById('roll').value.trim();
+    const registration = document.getElementById('registration').value.trim();
+    const errorEl = document.getElementById('errorMsg');
+    errorEl.classList.remove('show');
+
+    if (!exam || !year || !roll || !registration) {
+        errorEl.textContent = 'অনুগ্রহ করে পরীক্ষা, সাল, রোল এবং রেজিস্ট্রেশন নম্বর সব দিন।';
+        errorEl.classList.add('show');
+        return;
+    }
+
+    const params = new URLSearchParams({ exam, year, roll, registration });
+    const resp = await fetch('/api/public/result?' + params.toString());
+    const data = await resp.json();
+
+    if (!resp.ok) {
+        errorEl.textContent = data.error || 'ফলাফল পাওয়া যায়নি।';
+        errorEl.classList.add('show');
+        document.getElementById('resultArea').innerHTML = '';
+        return;
+    }
+
+    renderResult(data);
+}
+
+function renderResult(data) {
+    const rows = data.subjects.map((s, i) => `
+        <tr>
+            <td>${i + 1}</td>
+            <td style="text-align:left">${s.subject}</td>
+            <td>${s.full_marks}</td>
+            <td>${s.marks}</td>
+            <td>${s.grade}</td>
+            <td>${s.gpa}</td>
+            <td class="${s.status === 'PASS' ? 'pass' : 'fail'}">${s.status}</td>
+        </tr>`).join('');
+
+    document.getElementById('resultArea').innerHTML = `
+    <div class="result-container">
+        <div class="header">
+            <h1>${data.exam.name} EXAMINATION - ${data.exam.year}</h1>
+        </div>
+        <div class="student-info">
+            <div><strong>Name:</strong> ${data.student.name}</div>
+            <div><strong>Roll:</strong> ${data.student.roll}</div>
+            <div><strong>Registration:</strong> ${data.student.registration}</div>
+            <div><strong>Class / Group:</strong> ${data.student.class || ''} ${data.student.group || ''}</div>
+        </div>
+        <table>
+            <thead><tr><th>SL</th><th>Subject</th><th>Full</th><th>Marks</th><th>Grade</th><th>GPA</th><th>Status</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+        <div class="summary">
+            <div><strong>Result</strong><br><span class="${data.summary.status === 'PASS' ? 'pass' : 'fail'}">${data.summary.status}</span></div>
+            <div><strong>Total Marks</strong><br>${data.summary.total_marks} / ${data.summary.total_full_marks}</div>
+            <div><strong>GPA</strong><br>${data.summary.gpa}</div>
+            <div><strong>&nbsp;</strong><br>&nbsp;</div>
+        </div>
+        <div class="print-section" style="text-align:center;margin-top:20px;">
+            <button class="primary" style="width:auto;padding:10px 25px" onclick="window.print()">🖨️ Print</button>
+        </div>
+    </div>`;
+}
+</script>
+
+</body>
+</html>

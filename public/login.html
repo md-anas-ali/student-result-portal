@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">📚 Student Result</div>
+    <nav>
+        <a href="/index.html">Home</a>
+        <a href="/search.html">Result</a>
+        <a href="/login.html">Login</a>
+    </nav>
+</header>
+
+<div class="container" style="max-width:420px;">
+    <div class="card-box">
+        <h2>🔐 Login</h2>
+        <div id="errorMsg" class="error-msg"></div>
+        <input id="username" type="text" placeholder="Username" autocomplete="username">
+        <input id="password" type="password" placeholder="Password" autocomplete="current-password">
+        <button class="primary" onclick="login()">Login</button>
+    </div>
+</div>
+
+<script>
+async function login() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const errorEl = document.getElementById('errorMsg');
+    errorEl.classList.remove('show');
+
+    const resp = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+        errorEl.textContent = data.error || 'Login failed';
+        errorEl.classList.add('show');
+        return;
+    }
+
+    if (data.role === 'admin') window.location.href = '/admin/dashboard.html';
+    else if (data.role === 'teacher') window.location.href = '/teacher/dashboard.html';
+    else window.location.href = '/student/dashboard.html';
+}
+</script>
+
+</body>
+</html>
