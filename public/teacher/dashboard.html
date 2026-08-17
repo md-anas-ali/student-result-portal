@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Dashboard</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">📚 Teacher Dashboard</div>
+    <nav><a href="#" onclick="logout()">Logout</a></nav>
+</header>
+
+<div class="container">
+    <div id="errorMsg" class="error-msg"></div>
+
+    <div class="card-box" style="margin-bottom:20px;">
+        <h2>My Assignments</h2>
+        <table class="data-table" id="assignTable">
+            <thead><tr><th>Class</th><th>Section</th><th>Subject</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="card-box" style="margin-bottom:20px;">
+        <h2>My Students</h2>
+        <div class="form-row">
+            <select id="classSelect"></select>
+            <select id="sectionSelect"><option value="">All sections</option></select>
+        </div>
+        <button class="primary" style="margin-top:10px" onclick="loadStudents()">Load Students</button>
+        <table class="data-table" id="studentsTable" style="margin-top:15px;">
+            <thead><tr><th>Student ID</th><th>Name</th><th>Roll</th><th>Registration</th><th></th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="card-box" id="marksForm" style="display:none;">
+        <h2>Enter Marks</h2>
+        <p id="marksStudentLabel"></p>
+        <input type="hidden" id="marksStudentId">
+        <div class="form-row">
+            <input id="marksExamId" placeholder="Exam ID">
+            <input id="marksSubjectId" placeholder="Subject ID">
+        </div>
+        <div class="form-row">
+            <input id="marksFull" placeholder="Full marks" value="100">
+            <input id="marksMarks" placeholder="Marks obtained">
+        </div>
+        <div class="form-row">
+            <input id="marksGrade" placeholder="Grade (e.g. A+)">
+            <input id="marksGpa" placeholder="GPA (e.g. 5.00)">
+        </div>
+        <select id="marksStatus"><option value="PASS">PASS</option><option value="FAIL">FAIL</option></select>
+        <button class="primary" onclick="submitMarks()">Save Marks</button>
+    </div>
+</div>
+
+<script>
+let assignments = [];
+
+async function guard() {
+    const r = await fetch('/api/me');
+    if (!r.ok) { window.location.href = '/login.html'; return; }
+    const me = await r.json();
+    if (me.role !== 'teacher') { window.location.href = '/login.html'; }
+}
+
+async function loadAssignments() {
+    const r = await fetch('/api/teacher/assignments');
+    assignments = await r.json();
+    document.querySelector('#assignTable tbody').innerHTML = assignments.map(a =>
+        `<tr><td>${a.class_name}</td><td>${a.section_name || 'All'}</td><td>${a.subject_name}</td></tr>`).join('');
+
+    const classes = [...new Map(assignments.map(a => [a.class_id, a.class_name])).entries()];
+    document.getElementById('classSelect').innerHTML = classes.map(([id, name]) => `<option value="${id}">${name}</option>`).join('');
+}
+
+async function loadStudents() {
+    const classId = document.getElementById('classSelect').value;
+    const sectionId = document.getElementById('sectionSelect').value;
+    const params = new URLSearchParams({ classId });
+    if (sectionId) params.append('sectionId', sectionId);
+    const r = await fetch('/api/teacher/students?' + params.toString());
+    const errorEl = document.getElementById('errorMsg');
+    if (!r.ok) {
+        const data = await r.json();
+        errorEl.textContent = data.error;
+        errorEl.classList.add('show');
+        return;
+    }
+    errorEl.classList.remove('show');
+    const rows = await r.json();
+    document.querySelector('#studentsTable tbody').innerHTML = rows.map(s => `
+        <tr><td>${s.student_id}</td><td>${s.name}</td><td>${s.roll}</td><td>${s.registration}</td>
+        <td><button onclick="openMarksForm(${s.id}, '${s.name}')">Enter Marks</button></td></tr>`).join('');
+}
+
+function openMarksForm(studentId, name) {
+    document.getElementById('marksForm').style.display = 'block';
+    document.getElementById('marksStudentId').value = studentId;
+    document.getElementById('marksStudentLabel').textContent = 'Student: ' + name;
+}
+
+async function submitMarks() {
+    const body = {
+        studentId: Number(document.getElementById('marksStudentId').value),
+        examId: Number(document.getElementById('marksExamId').value),
+        subjectId: Number(document.getElementById('marksSubjectId').value),
+        fullMarks: Number(document.getElementById('marksFull').value),
+        marks: Number(document.getElementById('marksMarks').value),
+        grade: document.getElementById('marksGrade').value,
+        gpa: Number(document.getElementById('marksGpa').value),
+        status: document.getElementById('marksStatus').value
+    };
+    const r = await fetch('/api/teacher/marks', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    const errorEl = document.getElementById('errorMsg');
+    if (!r.ok) { errorEl.textContent = data.error; errorEl.classList.add('show'); return; }
+    errorEl.classList.remove('show');
+    alert('Marks saved.');
+}
+
+async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+}
+
+guard().then(loadAssignments);
+</script>
+
+</body>
+</html>
