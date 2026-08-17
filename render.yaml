@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: student-result-portal
+    runtime: node
+    plan: free
+    region: singapore          # closest free-tier region to Bangladesh; change if you prefer another
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: COOKIE_SECURE
+        value: "true"
+
+      # ---- Secrets: set these in the Render dashboard, not here ----
+      # (sync: false means Render will prompt you for the value instead
+      # of reading it from this file, so nothing secret ends up in git.)
+      - key: DATABASE_URL
+        sync: false             # Neon (or other) PostgreSQL connection string
+      - key: JWT_SECRET
+        sync: false             # e.g. output of: openssl rand -hex 32
+      - key: JWT_EXPIRES_IN
+        value: 8h
+
+      - key: SEED_ADMIN_USERNAME
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false             # full service-account JSON as one line
+      - key: GOOGLE_SHEETS_STUDENTS_ID
+        sync: false
+      - key: GOOGLE_SHEETS_TEACHERS_ID
+        sync: false
+      - key: GOOGLE_SHEETS_MARKS_ID
+        sync: false
+
+# No `databases:` block on purpose — Render's free Postgres expires after
+# 90 days (rule 42/43: don't assume persistent storage), so this project
+# is set up to point DATABASE_URL at an external always-on free Postgres
+# (Neon works well) instead. If you'd rather use Render's own Postgres,
+# add:
+#
+# databases:
+#   - name: student-result-portal-db
+#     plan: free
+#
+# ...and then set DATABASE_URL in the dashboard to its "Internal Connection String".
