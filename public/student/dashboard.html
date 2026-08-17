@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Dashboard</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header>
+    <div class="logo">📚 Student Dashboard</div>
+    <nav><a href="#" onclick="logout()">Logout</a></nav>
+</header>
+
+<div class="container">
+    <div id="errorMsg" class="error-msg"></div>
+
+    <div class="card-box" style="margin-bottom:20px;">
+        <h2>My Profile</h2>
+        <div id="profile"></div>
+    </div>
+
+    <div class="card-box">
+        <h2>My Results</h2>
+        <table class="data-table" id="resultsTable">
+            <thead><tr><th>Exam</th><th>Year</th><th>Total</th><th>GPA</th><th>Status</th><th></th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="marksheetArea"></div>
+</div>
+
+<script>
+async function guard() {
+    const r = await fetch('/api/me');
+    if (!r.ok) { window.location.href = '/login.html'; return; }
+    const me = await r.json();
+    if (me.role !== 'student') { window.location.href = '/login.html'; }
+}
+
+async function loadProfile() {
+    const r = await fetch('/api/student/me');
+    if (!r.ok) return;
+    const p = await r.json();
+    document.getElementById('profile').innerHTML = `
+        <p><strong>Name:</strong> ${p.name}</p>
+        <p><strong>Student ID:</strong> ${p.student_id}</p>
+        <p><strong>Roll:</strong> ${p.roll} &nbsp; <strong>Registration:</strong> ${p.registration}</p>
+        <p><strong>Class:</strong> ${p.class_name || '-'} ${p.section_name || ''}</p>`;
+}
+
+async function loadResults() {
+    const r = await fetch('/api/student/results');
+    const rows = await r.json();
+    document.querySelector('#resultsTable tbody').innerHTML = rows.map(row => `
+        <tr>
+            <td>${row.exam}</td><td>${row.year}</td>
+            <td>${row.total_marks}/${row.total_full_marks}</td>
+            <td>${row.gpa}</td>
+            <td class="${row.status === 'PASS' ? 'pass' : 'fail'}">${row.status}</td>
+            <td><button onclick="viewMarksheet(${row.exam_id || 0}, '${row.exam}', ${row.year})">View</button></td>
+        </tr>`).join('');
+}
+
+async function viewMarksheet(examId, examName, year) {
+    if (!examId) { alert('Marksheet id missing for this row.'); return; }
+    const r = await fetch('/api/student/marksheet/' + examId);
+    if (!r.ok) return;
+    const data = await r.json();
+    const rows = data.subjects.map((s, i) => `
+        <tr><td>${i+1}</td><td style="text-align:left">${s.subject}</td><td>${s.full_marks}</td><td>${s.marks}</td><td>${s.grade}</td><td>${s.gpa}</td><td>${s.status}</td></tr>`).join('');
+    document.getElementById('marksheetArea').innerHTML = `
+    <div class="result-container">
+        <div class="header"><h1>${examName} - ${year} Marksheet</h1></div>
+        <table><thead><tr><th>SL</th><th>Subject</th><th>Full</th><th>Marks</th><th>Grade</th><th>GPA</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody></table>
+    </div>`;
+}
+
+async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+}
+
+guard().then(() => { loadProfile(); loadResults(); });
+</script>
+
+</body>
+</html>
