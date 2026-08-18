@@ -13,6 +13,12 @@ const adminRoutes = require('./routes/admin');
 
 const app = express();
 
+// Render puts one reverse proxy in front of the app, which sets
+// X-Forwarded-For. Without this, express-rate-limit (used on the login
+// route) can't safely read the real client IP and throws
+// ERR_ERL_UNEXPECTED_X_FORWARDED_FOR. "1" = trust exactly one hop.
+app.set('trust proxy', 1);
+
 // Ensure the schema exists before we start accepting traffic. schema.sql is
 // written entirely with `IF NOT EXISTS`, so running it on every boot is safe
 // and cheap — this is what stops "relation ... does not exist" errors when
