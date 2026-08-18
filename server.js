@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const fs = require('fs');
+const pool = require('./db/pool');
 
 const authRoutes = require('./routes/auth');
 const publicRoutes = require('./routes/public');
@@ -10,6 +12,17 @@ const teacherRoutes = require('./routes/teacher');
 const adminRoutes = require('./routes/admin');
 
 const app = express();
+
+// Ensure the schema exists before we start accepting traffic. schema.sql is
+// written entirely with `IF NOT EXISTS`, so running it on every boot is safe
+// and cheap — this is what stops "relation ... does not exist" errors when
+// DATABASE_URL points at a brand-new (or freshly reset) Postgres instance.
+async function ensureSchema() {
+  const schemaPath = path.join(__dirname, 'db', 'schema.sql');
+  const schema = fs.readFileSync(schemaPath, 'utf8');
+  await pool.query(schema);
+  console.log('Database schema verified/applied.');
+}
 
 app.use(express.json());
 app.use(cookieParser());
@@ -41,4 +54,12 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Result portal listening on port ${PORT}`));
+
+ensureSchema()
+  .then(() => {
+    app.listen(PORT, () => console.log(`Result portal listening on port ${PORT}`));
+  })
+  .catch((err) => {
+    console.error('Failed to apply database schema on startup:', err);
+    process.exit(1);
+  });
